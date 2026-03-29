@@ -180,6 +180,8 @@ VITE_GOOGLE_CLIENT_ID=your_google_oauth_client_id
 ### Login Page
 * Email/password sign in and registration
 * One-click Google SSO
+* 
+![Login Page](assets/login.png)
 
 ### Code Translator (Home)
 * Monaco Editor with syntax highlighting
@@ -187,10 +189,14 @@ VITE_GOOGLE_CLIENT_ID=your_google_oauth_client_id
 * Language selector with swap button
 * Real-time AI output panel
 
+![Code Translator](assets/editor.png)
+
 ### History Page
 * Paginated list of all past operations
 * Click any entry to view full input + output
 * Delete individual entries or clear all history
+
+![History Page](assets/history.png)
 
 ---
 
