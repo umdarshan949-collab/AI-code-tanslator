@@ -1,4 +1,3 @@
-/* ── OutputPanel ─────────────────────────────────── */
 .empty-state {
   height: 100%;
   display: flex;
@@ -6,14 +5,24 @@
   justify-content: center;
   color: #666;
   font-size: 14px;
-  text-align: center;
-  padding: 20px;
 }
-.empty-state span { color: #fff; font-weight: 600; margin: 0 4px; }
 
-.output-code { height: 100%; }
+.empty-state span {
+  color: #fff;
+  font-weight: 600;
+  margin: 0 4px;
+}
 
-.complexity-cards { padding: 24px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; height: 100%; }
+.output-code {
+  height: 100%;
+}
+
+.complexity-cards {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
 
 .info-card {
   background: #1e1e1e;
@@ -21,12 +30,39 @@
   border-radius: 10px;
   padding: 16px 20px;
 }
-.info-card h4     { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #888; margin-bottom: 8px; }
-.info-card .badge { font-size: 22px; font-weight: 700; color: #fff; font-family: monospace; margin-bottom: 8px; }
-.info-card p      { font-size: 13px; color: #aaa; line-height: 1.6; }
 
-.optimize-output { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
-.optimize-code   { flex: 1; min-height: 0; }
+.info-card h4 {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #888;
+  margin-bottom: 8px;
+}
+
+.info-card .badge {
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  font-family: monospace;
+  margin-bottom: 8px;
+}
+
+.info-card p {
+  font-size: 13px;
+  color: #aaa;
+  line-height: 1.6;
+}
+
+.optimize-output {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.optimize-code {
+  flex: 1;
+  min-height: 0;
+}
 
 .suggestions-box {
   padding: 16px 20px;
@@ -34,20 +70,32 @@
   border-top: 1px solid #2a2a2a;
   max-height: 160px;
   overflow-y: auto;
-  flex-shrink: 0;
 }
-.suggestions-box h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #888; margin-bottom: 8px; }
-.suggestions-box p  { font-size: 13px; color: #ccc; line-height: 1.7; white-space: pre-wrap; word-break: break-word; }
 
-.explain-output { padding: 24px; overflow-y: auto; height: 100%; }
-.explain-output p { font-size: 14px; color: #ccc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; }
+.suggestions-box h4 {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #888;
+  margin-bottom: 8px;
+}
 
-/* ── Mobile ─────────────────────────────────────── */
-@media (max-width: 640px) {
-  .complexity-cards { padding: 16px; gap: 12px; }
-  .info-card        { padding: 14px; }
-  .info-card .badge { font-size: 18px; }
-  .explain-output   { padding: 16px; }
-  .explain-output p { font-size: 13px; }
-  .suggestions-box  { max-height: 120px; padding: 12px 14px; }
+.suggestions-box p {
+  font-size: 13px;
+  color: #ccc;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+.explain-output {
+  padding: 24px;
+  overflow-y: auto;
+  height: 100%;
+}
+
+.explain-output p {
+  font-size: 14px;
+  color: #ccc;
+  line-height: 1.8;
+  white-space: pre-wrap;
 }
