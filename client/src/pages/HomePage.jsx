@@ -1,178 +1,180 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
+import HistoryList from "../components/HistoryList.jsx";
 import CodeEditor from "../components/CodeEditor.jsx";
-import OutputPanel from "../components/OutputPanel.jsx";
-import LanguageSelector from "../components/LanguageSelector.jsx";
-import { STARTER_CODE } from "../constants/languages.js";
 import {
-  translateCode,
-  analyzeComplexity,
-  optimizeCode,
-  explainCode,
-} from "../services/codeService.js";
-import "../styles/home.css";
+  getHistory,
+  deleteHistoryItem,
+  clearHistory,
+} from "../services/historyService.js";
+import "../styles/history.css";
 
-const ACTIONS = ["translate", "analyze", "optimize", "explain"];
+function HistoryPage() {
+  const [entries, setEntries] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [selectedEntry, setSelectedEntry] = useState(null);
 
-function HomePage() {
-  const [activeAction, setActiveAction] = useState("translate");
-  const [code, setCode] = useState(STARTER_CODE.python);
-  const [sourceLanguage, setSourceLanguage] = useState("python");
-  const [targetLanguage, setTargetLanguage] = useState("java");
-  const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [copied, setCopied] = useState(false);
-
-  const handleSourceChange = (langId) => {
-    setSourceLanguage(langId);
-    if (STARTER_CODE[langId]) setCode(STARTER_CODE[langId]);
-    setResult(null);
-  };
-
-  const handleSwap = () => {
-    if (activeAction !== "translate") return;
-    setSourceLanguage(targetLanguage);
-    setTargetLanguage(sourceLanguage);
-    if (result?.translatedCode) {
-      setCode(result.translatedCode);
-      setResult(null);
-    }
-  };
-
-  const handleCopy = async () => {
-    if (!result) return;
-    let text = "";
-    if (activeAction === "translate") text = result.translatedCode || "";
-    else if (activeAction === "optimize") text = result.optimizedCode || "";
-    else if (activeAction === "explain") text = result.explanation || "";
-    else if (activeAction === "analyze")
-      text = `Time: ${result.timeComplexity}\nSpace: ${result.spaceComplexity}\n\n${result.explanation || ""}`;
+  const fetchHistory = useCallback(async (page = currentPage) => {
     try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setLoading(true);
+      const data = await getHistory(page, 8);
+      setEntries(data.entries);
+      setTotalPages(data.totalPages);
     } catch {
-      toast.error("Failed to copy.");
-    }
-  };
-
-  const handleRun = async () => {
-    if (!code.trim()) return toast.error("Please write some code first.");
-    if (!sourceLanguage) return toast.error("Select a source language.");
-    if (activeAction === "translate" && !targetLanguage)
-      return toast.error("Select a target language.");
-
-    setLoading(true);
-    setResult(null);
-
-    try {
-      const fns = {
-        translate: () => translateCode(code, sourceLanguage, targetLanguage),
-        analyze: () => analyzeComplexity(code, sourceLanguage),
-        optimize: () => optimizeCode(code, sourceLanguage),
-        explain: () => explainCode(code, sourceLanguage),
-      };
-
-      const data = await fns[activeAction]();
-      setResult(data);
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Something went wrong.");
+      toast.error("Failed to load history.");
     } finally {
       setLoading(false);
     }
+  }, [currentPage]);
+
+  useEffect(() => {
+    fetchHistory(currentPage);
+  }, [currentPage, fetchHistory]);
+
+  const handleDelete = async (id) => {
+    try {
+      await deleteHistoryItem(id);
+      toast.success("Deleted");
+      if (selectedEntry?._id === id) setSelectedEntry(null);
+      fetchHistory();
+    } catch {
+      toast.error("Failed to delete.");
+    }
   };
 
+  const handleClearAll = async () => {
+    if (!window.confirm("Clear all history? This cannot be undone.")) return;
+    try {
+      await clearHistory();
+      toast.success("History cleared.");
+      setEntries([]);
+      setSelectedEntry(null);
+      setCurrentPage(1);
+    } catch {
+      toast.error("Failed to clear history.");
+    }
+  };
+
+  // On mobile: sidebar hides when an entry is selected; detail hides when none selected
+  const sidebarClass = `history-sidebar${selectedEntry ? " hidden" : ""}`;
+  const detailClass  = `history-detail${!selectedEntry ? " hidden" : ""}`;
+
   return (
-    <div className="home">
-      {/* Toolbar */}
-      <div className="toolbar">
-        <div className="action-tabs">
-          {ACTIONS.map((a) => (
-            <button
-              key={a}
-              className={`action-tab ${activeAction === a ? "active" : ""}`}
-              onClick={() => {
-                setActiveAction(a);
-                setResult(null);
-              }}
-            >
-              {a}
-            </button>
-          ))}
-        </div>
-        <div className="toolbar-right">
-          {result && (
-            <button className="copy-btn" onClick={handleCopy}>
-              {copied ? "Copied!" : "Copy"}
-            </button>
+    <div className="history-page">
+      {/* ── Sidebar ── */}
+      <div className={sidebarClass}>
+        <div className="history-sidebar-header">
+          <h2>History</h2>
+          {entries.length > 0 && (
+            <button className="clear-btn" onClick={handleClearAll}>Clear all</button>
           )}
-          <button className="run-btn" onClick={handleRun} disabled={loading}>
-            {loading ? "Running..." : "Run"}
-          </button>
         </div>
+
+        <div className="history-list">
+          {loading ? (
+            <div className="history-empty">Loading...</div>
+          ) : (
+            <HistoryList
+              entries={entries}
+              onView={setSelectedEntry}
+              onDelete={handleDelete}
+              selectedId={selectedEntry?._id}
+            />
+          )}
+        </div>
+
+        {totalPages > 1 && (
+          <div className="history-pagination">
+            <button className="page-btn" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1}>Prev</button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <button key={p} className={`page-btn ${currentPage === p ? "active" : ""}`} onClick={() => setCurrentPage(p)}>{p}</button>
+            ))}
+            <button className="page-btn" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>Next</button>
+          </div>
+        )}
       </div>
 
-      {/* Panels */}
-      <div className="panels">
-        {/* Left — Source */}
-        <div className="panel">
-          <div className="panel-header">
-            <span>Source</span>
-            <LanguageSelector
-              value={sourceLanguage}
-              onChange={handleSourceChange}
-              disabled={loading}
-            />
-          </div>
-          <div className="panel-body">
-            <CodeEditor
-              code={code}
-              onChange={setCode}
-              language={sourceLanguage}
-            />
-          </div>
-        </div>
-
-        {/* Swap / Arrow button */}
-        {activeAction === "translate" ? (
-          <button className="swap-btn" onClick={handleSwap} title="Swap">
-            ⇄
-          </button>
+      {/* ── Detail Panel ── */}
+      <div className={detailClass}>
+        {!selectedEntry ? (
+          <div className="detail-empty">Select an entry to view details</div>
         ) : (
-          <div className="swap-btn" style={{ cursor: "default" }}>→</div>
-        )}
+          <>
+            {/* Back button visible only on mobile via CSS */}
+            <button className="detail-back-btn" onClick={() => setSelectedEntry(null)}>
+              ← Back to History
+            </button>
 
-        {/* Right — Output */}
-        <div className="panel">
-          <div className="panel-header">
-            <span>Output</span>
-            {activeAction === "translate" ? (
-              <LanguageSelector
-                value={targetLanguage}
-                onChange={setTargetLanguage}
-                disabled={loading}
-              />
-            ) : (
-              <span className="action-badge">{activeAction}</span>
-            )}
-          </div>
-          <div className="panel-body">
-            {loading ? (
-              <div className="loading-panel">
-                <div className="spinner" />
+            <div className="detail-header">
+              <div className="detail-header-left">
+                <span className="detail-type-badge">{selectedEntry.type}</span>
+                <span className="detail-date">{new Date(selectedEntry.createdAt).toLocaleString()}</span>
               </div>
-            ) : (
-              <OutputPanel
-                result={result}
-                action={activeAction}
-                targetLanguage={targetLanguage}
-              />
-            )}
-          </div>
-        </div>
+              <button className="close-btn" onClick={() => setSelectedEntry(null)}>×</button>
+            </div>
+
+            <div className="detail-body">
+              {/* Input */}
+              <div className="detail-section">
+                <h4>Input · {selectedEntry.sourceLanguage}</h4>
+                <div className="detail-editor-wrap">
+                  <CodeEditor
+                    code={selectedEntry.inputCode}
+                    onChange={() => {}}
+                    language={selectedEntry.sourceLanguage}
+                    readOnly={true}
+                  />
+                </div>
+              </div>
+
+              {/* Output */}
+              <div className="detail-section">
+                <h4>Output</h4>
+
+                {selectedEntry.type === "translate" && (
+                  <div>
+                    <span className="detail-lang-badge">Target: {selectedEntry.targetLanguage}</span>
+                    <pre className="detail-code-block">{selectedEntry.output?.translatedCode}</pre>
+                  </div>
+                )}
+
+                {selectedEntry.type === "analyze" && (
+                  <div className="detail-complexity-cards">
+                    <div className="info-card">
+                      <h4>Time Complexity</h4>
+                      <div className="badge">{selectedEntry.output?.timeComplexity}</div>
+                      <p>{selectedEntry.output?.explanation}</p>
+                    </div>
+                    <div className="info-card">
+                      <h4>Space Complexity</h4>
+                      <div className="badge">{selectedEntry.output?.spaceComplexity}</div>
+                    </div>
+                  </div>
+                )}
+
+                {selectedEntry.type === "optimize" && (
+                  <div>
+                    <pre className="detail-code-block">{selectedEntry.output?.optimizedCode}</pre>
+                    {selectedEntry.output?.suggestions && (
+                      <div style={{ marginTop: "12px" }}>
+                        <p className="detail-explanation">{selectedEntry.output.suggestions}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {selectedEntry.type === "explain" && (
+                  <p className="detail-explanation">{selectedEntry.output?.explanation}</p>
+                )}
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
 }
 
-export default HomePage;
+export default HistoryPage;
